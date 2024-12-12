@@ -8,15 +8,11 @@ const todos = require('./database/todo-queries.js');
  * @returns {Object} Formatted user object with URL
  */
 function createdUser(req, data) {
-  const protocol = req.protocol, 
-    host = req.get('host'), 
-    id = data.id;
-
   return {
     name: data.name,
     email: data.email,
     password: data.password_hash,
-    url: `${protocol}://${host}/users/${id}`
+    url: constructUrl(req, 'users', data.id)
   };
 }
 
@@ -27,15 +23,11 @@ function createdUser(req, data) {
  * @returns {Object} Formatted project object with URL
  */
 function createdProject(req, data) {
-  const protocol = req.protocol, 
-    host = req.get('host'), 
-    id = data.id;
-
   return {
     name: data.name,
     description: data.description,
     owner_id: data.owner_id,
-    url: `${protocol}://${host}/projects/${id}`
+    url: constructUrl(req, 'projects', data.id)
   };
 }
 
@@ -46,16 +38,12 @@ function createdProject(req, data) {
  * @returns {Object} Formatted task object with URL
  */
 function createdTask(req, data) {
-  const protocol = req.protocol, 
-    host = req.get('host'), 
-    id = data.id;
-
   return {
     name: data.name,
     description: data.description,
     status: data.status,
     project: data.project_id,
-    url: `${protocol}://${host}/tasks/${id}`
+    url: constructUrl(req, 'tasks', data.id)
   };
 }
 
@@ -66,14 +54,10 @@ function createdTask(req, data) {
  * @returns {Object} Formatted task assignment object with URL
  */
 function assignedTask(req, data) {
-  const protocol = req.protocol, 
-    host = req.get('host'), 
-    id = data.id;
-
   return {
     task_id: data.task_id,
     user_id: data.user_id,
-    url: `${protocol}://${host}/assigned_task/${id}`
+    url: constructUrl(req, 'assigned_task', data.id)
   };
 }
 
@@ -84,7 +68,13 @@ function assignedTask(req, data) {
  * @returns {Object} Created user data
  */
 async function postUser(req, res) {
-  const created = await todos.createUser(req.body.name, req.body.email, req.body.password_hash);
+  // Validate required fields
+  const { name, email, password_hash } = req.body;
+  if (!email || !password_hash) {
+    return res.status(400).send('Email and password are required');
+  }
+  
+  const created = await todos.createUser(name, email, password_hash);
   return res.send(createdUser(req, created));
 }
 
@@ -152,13 +142,19 @@ function addErrorReporting(func, message) {
     }
 }
 
+function constructUrl(req, path, id) {
+  const protocol = req.protocol;
+  const host = req.get('host');
+  return `${protocol}://${host}/${path}/${id}`;
+}
+
 // Route configuration object with handlers and error messages
 const toExport = {
-    postUser: { method: postUser, errorMessage: "Could not fetch all todos" },
-    postProject: { method: postProject, errorMessage: "Could not fetch all todos" },
-    getUser: { method: getUser, errorMessage: "Could not fetch all todos" },
-    postTask: { method: postTask, errorMessage: "Could not fetch all todos" },
-    assignTask: { method: assignTask, errorMessage: "Could not fetch all todos" },
+  postUser: { method: postUser, errorMessage: "Could not create user" },
+  postProject: { method: postProject, errorMessage: "Could not create project" },
+  getUser: { method: getUser, errorMessage: "Could not fetch user" },
+  postTask: { method: postTask, errorMessage: "Could not create task" },
+  assignTask: { method: assignTask, errorMessage: "Could not assign task" },
 }
 
 // Wrap all route handlers with error reporting
