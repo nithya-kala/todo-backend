@@ -96,7 +96,11 @@ async function getUser(req, res) {
  * @returns {Object} Created project data
  */
 async function postProject(req, res) {
-  const created = await todos.createProject(req.body.name, req.body.description, req.body.owner_id);
+  const { name, owner_id } = req.body;
+  if (!name || !owner_id) {
+    return res.status(400).send('Project name and owner ID are required');
+  }
+  const created = await todos.createProject(name, req.body.description, owner_id);
   return res.send(createdProject(req, created));
 }
 
@@ -107,7 +111,11 @@ async function postProject(req, res) {
  * @returns {Object} Created task data
  */
 async function postTask(req, res) {
-  const created = await todos.createTask(req.body.title, req.body.description, req.body.status, req.body.project_id);
+  const { title, project_id } = req.body;
+  if (!title || !project_id) {
+    return res.status(400).send('Task title and project ID are required');
+  }
+  const created = await todos.createTask(title, req.body.description, req.body.status, project_id);
   return res.send(createdTask(req, created));
 }
 
@@ -135,9 +143,15 @@ function addErrorReporting(func, message) {
             return await func(req, res);
         } catch(err) {
             console.log(`${message} caused by: ${err}`);
-
-            // Not always 500, but for simplicity's sake.
-            res.status(500).send(`Opps! ${message}.`);
+            
+            // Add specific status codes based on error type
+            if (err.name === 'NotFoundError') {
+                return res.status(404).send(`Not found: ${message}`);
+            }
+            if (err.name === 'ValidationError') {
+                return res.status(400).send(`Invalid input: ${message}`);
+            }
+            res.status(500).send(`Server error: ${message}`);
         } 
     }
 }
