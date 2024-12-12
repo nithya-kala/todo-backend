@@ -1,4 +1,5 @@
 const knex = require("./connection.js");
+const bcrypt = require('bcrypt');
 
 async function all() {
     return knex('users');
@@ -29,9 +30,12 @@ async function clear() {
     return knex('todos').del().returning('*');
 }
 
-async function createUser(name, email, password_hash) {
+async function createUser(name, email, password) {
+    // Generate a salt and hash the password
+    const saltRounds = 10;
+    const password_hash = await bcrypt.hash(password, saltRounds);
     const results = await knex('users').insert({ name, email, password_hash }).returning('*');
-     return results[0];
+    return results[0];
 }
 
 async function getUser(id) {

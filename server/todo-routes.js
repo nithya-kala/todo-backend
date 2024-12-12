@@ -11,7 +11,6 @@ function createdUser(req, data) {
   return {
     name: data.name,
     email: data.email,
-    password: data.password_hash,
     url: constructUrl(req, 'users', data.id)
   };
 }
@@ -69,12 +68,12 @@ function assignedTask(req, data) {
  */
 async function postUser(req, res) {
   // Validate required fields
-  const { name, email, password_hash } = req.body;
-  if (!email || !password_hash) {
+  const { name, email, password } = req.body;
+  if (!email || !password) {
     return res.status(400).send('Email and password are required');
   }
   
-  const created = await todos.createUser(name, email, password_hash);
+  const created = await todos.createUser(name, email, password);
   return res.send(createdUser(req, created));
 }
 
